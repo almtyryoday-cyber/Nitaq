@@ -46,8 +46,8 @@ jobs:
                 path: Nitaq/Info.plist
                 properties:
                   CFBundleDisplayName: "نطاق"
-                  CFBundleShortVersionString: "1.0"
-                  CFBundleVersion: "1"
+                  CFBundleShortVersionString: "2.0"
+                  CFBundleVersion: "2"
                   UILaunchScreen: {}
                   UIStatusBarStyle: UIStatusBarStyleLightContent
                   UIViewControllerBasedStatusBarAppearance: true
@@ -83,20 +83,83 @@ jobs:
               }
           }
 
-          final class WebViewController: UIViewController, WKUIDelegate, WKNavigationDelegate {
+          final class WebViewController: UIViewController, WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler {
               private var webView: WKWebView!
-              private let bg = UIColor(red: 5/255, green: 7/255, blue: 15/255, alpha: 1)
-              override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
+
+              // Web icon id -> Apple SF Symbol names (first one available is used)
+              private static let symbols: [String: [String]] = [
+                  "speedometer": ["gauge.with.dots.needle.67percent", "speedometer"],
+                  "clock-arrow": ["clock.arrow.circlepath"],
+                  "chart-pie": ["chart.pie.fill"],
+                  "gear": ["gearshape.fill"],
+                  "arrow-down": ["arrow.down"],
+                  "arrow-up": ["arrow.up"],
+                  "bolt": ["bolt.fill"],
+                  "wave": ["waveform.path.ecg"],
+                  "globe": ["globe"],
+                  "server": ["server.rack"],
+                  "wifi": ["wifi"],
+                  "antenna": ["antenna.radiowaves.left.and.right"],
+                  "play": ["play.fill"],
+                  "repeat": ["arrow.clockwise"],
+                  "share": ["square.and.arrow.up"],
+                  "check": ["checkmark"],
+                  "check-circle": ["checkmark.circle.fill"],
+                  "warn": ["exclamationmark.triangle.fill"],
+                  "chevron": ["chevron.right"],
+                  "trash": ["trash.fill"],
+                  "moon": ["moon.fill"],
+                  "paint": ["paintpalette.fill"],
+                  "gauge-unit": ["slider.horizontal.3"],
+                  "timer": ["timer"],
+                  "link": ["link"],
+                  "info": ["info.circle.fill"],
+                  "sim": ["simcard.fill"],
+                  "calendar": ["calendar"],
+                  "infinity": ["infinity"],
+                  "plus": ["plus"],
+                  "msg": ["message.fill"],
+                  "music": ["music.note"],
+                  "tv": ["play.rectangle.fill"],
+                  "film": ["film.fill"],
+                  "video": ["video.fill"],
+                  "game": ["gamecontroller.fill"],
+                  "broadcast": ["dot.radiowaves.left.and.right"],
+                  "download-box": ["square.and.arrow.down.fill"]
+              ]
+
+              private static func symbolsJSON() -> String {
+                  let cfg = UIImage.SymbolConfiguration(pointSize: 60, weight: .semibold)
+                  var out: [String: String] = [:]
+                  for (key, names) in symbols {
+                      guard let img = names.lazy.compactMap({ UIImage(systemName: $0, withConfiguration: cfg) }).first?
+                              .withTintColor(.black, renderingMode: .alwaysOriginal) else { continue }
+                      let png = UIGraphicsImageRenderer(size: img.size).pngData { _ in img.draw(at: .zero) }
+                      out[key] = "data:image/png;base64," + png.base64EncodedString()
+                  }
+                  guard let data = try? JSONSerialization.data(withJSONObject: out),
+                        let s = String(data: data, encoding: .utf8) else { return "{}" }
+                  return s
+              }
+
+              override var preferredStatusBarStyle: UIStatusBarStyle {
+                  traitCollection.userInterfaceStyle == .light ? .darkContent : .lightContent
+              }
 
               override func loadView() {
                   let config = WKWebViewConfiguration()
                   config.websiteDataStore = .default()
+                  config.allowsInlineMediaPlayback = true
+                  let js = "window.__SF=" + Self.symbolsJSON() + ";window.__NATIVE=true;"
+                  config.userContentController.addUserScript(
+                      WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+                  config.userContentController.add(self, name: "theme")
                   webView = WKWebView(frame: .zero, configuration: config)
                   webView.uiDelegate = self
                   webView.navigationDelegate = self
                   webView.isOpaque = false
-                  webView.backgroundColor = bg
-                  webView.scrollView.backgroundColor = bg
+                  webView.backgroundColor = .systemBackground
+                  webView.scrollView.backgroundColor = .systemBackground
                   webView.scrollView.contentInsetAdjustmentBehavior = .never
                   view = webView
               }
@@ -107,13 +170,30 @@ jobs:
                   webView.loadFileURL(dir.appendingPathComponent("index.html"), allowingReadAccessTo: dir)
               }
 
+              // Links clicked in the main page open in Safari (Speedtest's own frame keeps working)
               func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
                            decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-                  if let url = navigationAction.request.url, navigationAction.navigationType == .linkActivated,
+                  if let url = navigationAction.request.url,
+                     navigationAction.navigationType == .linkActivated,
+                     navigationAction.targetFrame?.isMainFrame ?? true,
                      url.scheme == "http" || url.scheme == "https" {
                       UIApplication.shared.open(url); decisionHandler(.cancel); return
                   }
                   decisionHandler(.allow)
+              }
+
+              // web page tells us which theme it uses -> status bar follows
+              func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+                  guard let t = message.body as? String else { return }
+                  overrideUserInterfaceStyle = (t == "light") ? .light : .dark
+                  setNeedsStatusBarAppearanceUpdate()
+              }
+
+              // target="_blank" links
+              func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,
+                           for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+                  if let url = navigationAction.request.url { UIApplication.shared.open(url) }
+                  return nil
               }
 
               func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String,
