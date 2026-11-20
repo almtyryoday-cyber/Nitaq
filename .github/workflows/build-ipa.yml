@@ -1,0 +1,159 @@
+name: Build IPA
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Create iOS project
+        run: |
+          mkdir -p ios/Nitaq/web ios/Nitaq/Assets.xcassets/AppIcon.appiconset
+          cp index.html manifest.json icon-*.png ios/Nitaq/web/
+          cp icon-1024.png ios/Nitaq/Assets.xcassets/AppIcon.appiconset/
+          echo '{"info":{"author":"xcode","version":1}}' > ios/Nitaq/Assets.xcassets/Contents.json
+          echo '{"images":[{"filename":"icon-1024.png","idiom":"universal","platform":"ios","size":"1024x1024"}],"info":{"author":"xcode","version":1}}' > ios/Nitaq/Assets.xcassets/AppIcon.appiconset/Contents.json
+
+          cat > ios/project.yml <<'EOF'
+          name: Nitaq
+          options:
+            bundleIdPrefix: com.nitaq
+            deploymentTarget:
+              iOS: "15.0"
+          targets:
+            Nitaq:
+              type: application
+              platform: iOS
+              sources:
+                - path: Nitaq
+                  excludes:
+                    - "web/**"
+                - path: Nitaq/web
+                  type: folder
+                  buildPhase: resources
+              info:
+                path: Nitaq/Info.plist
+                properties:
+                  CFBundleDisplayName: "نطاق"
+                  CFBundleShortVersionString: "1.0"
+                  CFBundleVersion: "1"
+                  UILaunchScreen: {}
+                  UIStatusBarStyle: UIStatusBarStyleLightContent
+                  UIViewControllerBasedStatusBarAppearance: true
+                  UIRequiresFullScreen: true
+                  UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+                  ITSAppUsesNonExemptEncryption: false
+              settings:
+                base:
+                  PRODUCT_BUNDLE_IDENTIFIER: com.nitaq.speed
+                  PRODUCT_NAME: Nitaq
+                  TARGETED_DEVICE_FAMILY: "1,2"
+                  SWIFT_VERSION: "5.0"
+                  ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+                  CODE_SIGNING_ALLOWED: NO
+                  CODE_SIGNING_REQUIRED: NO
+          EOF
+
+          cat > ios/Nitaq/AppDelegate.swift <<'EOF'
+          import UIKit
+          import WebKit
+
+          @main
+          final class AppDelegate: UIResponder, UIApplicationDelegate {
+              var window: UIWindow?
+              func application(_ application: UIApplication,
+                               didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+                  let w = UIWindow(frame: UIScreen.main.bounds)
+                  w.rootViewController = WebViewController()
+                  w.backgroundColor = .black
+                  w.makeKeyAndVisible()
+                  window = w
+                  return true
+              }
+          }
+
+          final class WebViewController: UIViewController, WKUIDelegate, WKNavigationDelegate {
+              private var webView: WKWebView!
+              private let bg = UIColor(red: 5/255, green: 7/255, blue: 15/255, alpha: 1)
+              override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
+
+              override func loadView() {
+                  let config = WKWebViewConfiguration()
+                  config.websiteDataStore = .default()
+                  webView = WKWebView(frame: .zero, configuration: config)
+                  webView.uiDelegate = self
+                  webView.navigationDelegate = self
+                  webView.isOpaque = false
+                  webView.backgroundColor = bg
+                  webView.scrollView.backgroundColor = bg
+                  webView.scrollView.contentInsetAdjustmentBehavior = .never
+                  view = webView
+              }
+
+              override func viewDidLoad() {
+                  super.viewDidLoad()
+                  guard let dir = Bundle.main.url(forResource: "web", withExtension: nil) else { return }
+                  webView.loadFileURL(dir.appendingPathComponent("index.html"), allowingReadAccessTo: dir)
+              }
+
+              func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
+                           decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+                  if let url = navigationAction.request.url, navigationAction.navigationType == .linkActivated,
+                     url.scheme == "http" || url.scheme == "https" {
+                      UIApplication.shared.open(url); decisionHandler(.cancel); return
+                  }
+                  decisionHandler(.allow)
+              }
+
+              func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String,
+                           initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
+                  let a = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+                  a.addAction(UIAlertAction(title: "تم", style: .default) { _ in completionHandler() })
+                  present(a, animated: true)
+              }
+
+              func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String,
+                           initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
+                  let a = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+                  a.addAction(UIAlertAction(title: "إلغاء", style: .cancel) { _ in completionHandler(false) })
+                  a.addAction(UIAlertAction(title: "نعم", style: .destructive) { _ in completionHandler(true) })
+                  present(a, animated: true)
+              }
+          }
+          EOF
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Build (unsigned)
+        working-directory: ios
+        run: |
+          xcodebuild -project Nitaq.xcodeproj -target Nitaq -sdk iphoneos -configuration Release \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build | tail -n 40
+
+      - name: Package IPA
+        working-directory: ios
+        run: |
+          mkdir -p Payload
+          cp -R build/Release-iphoneos/Nitaq.app Payload/
+          zip -qry ../Nitaq.ipa Payload
+          ls -lh ../Nitaq.ipa
+
+      - name: Publish to Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest -y --cleanup-tag || true
+          gh release create latest Nitaq.ipa --title "نطاق — آخر نسخة" --notes "ثبّته عن طريق Sideloadly أو AltStore"
