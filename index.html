@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05070f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="نطاق — اختبر سرعة الإنترنت وتابع استهلاك باقتك بسهولة">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="apple-mobile-web-app-title" content="نطاق">
+<title>نطاق | Nitaq — سرعة الإنترنت</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://speed.cloudflare.com" crossorigin>
+<style>
+:root{
+  --bg:#05070f;
+  --bg2:#0b1020;
+  --card:rgba(255,255,255,.045);
+  --card-b:rgba(255,255,255,.08);
+  --text:#eef2ff;
+  --muted:#8b93ad;
+  --dim:#5b6380;
+  --cyan:#22d3ee;
+  --blue:#3b82f6;
+  --violet:#8b5cf6;
+  --green:#34d399;
+  --amber:#fbbf24;
+  --red:#f87171;
+  --dl:linear-gradient(135deg,#22d3ee,#3b82f6);
+  --ul:linear-gradient(135deg,#a78bfa,#ec4899);
+  --radius:22px;
+  --ar:"SF Arabic","SF Arabic Rounded",-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Arabic",Tahoma,sans-serif;
+  --en:"Rubik",system-ui,sans-serif;
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text);font-family:var(--ar);min-height:100%}
+body{overflow-x:hidden;padding-bottom:calc(96px + var(--safe-b))}
+.en,.num{font-family:var(--en);direction:ltr;unicode-bidi:isolate}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,select{font:inherit;color:inherit}
+
+/* background glow */
+.bg-glow{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.bg-glow::before,.bg-glow::after{content:"";position:absolute;width:70vmax;height:70vmax;border-radius:50%;filter:blur(90px);opacity:.28}
+.bg-glow::before{background:radial-gradient(circle,#1d4ed8,transparent 65%);top:-30vmax;right:-20vmax}
+.bg-glow::after{background:radial-gradient(circle,#7c3aed,transparent 65%);bottom:-35vmax;left:-25vmax;opacity:.2}
+
+/* header */
+header{display:flex;align-items:center;justify-content:space-between;max-width:980px;margin:0 auto;padding:18px 20px 6px}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:38px;height:38px;border-radius:12px;background:var(--dl);display:grid;place-items:center;box-shadow:0 6px 24px rgba(34,211,238,.35)}
+.logo svg{width:22px;height:22px}
+.brand h1{font-size:21px;font-weight:800;letter-spacing:-.2px}
+.brand small{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-top:1px}
+.net-pill{display:flex;align-items:center;gap:7px;padding:8px 13px;border-radius:999px;background:var(--card);border:1px solid var(--card-b);font-size:12.5px;color:var(--muted)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+.dot.off{background:var(--red);box-shadow:0 0 10px var(--red)}
+
+main{max-width:980px;margin:0 auto;padding:6px 20px 20px}
+.view{display:none;animation:fade .35s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* gauge */
+.gauge-wrap{position:relative;width:min(360px,88vw);aspect-ratio:1;margin:8px auto 0}
+.gauge-wrap svg{width:100%;height:100%;overflow:visible}
+.g-track{fill:none;stroke:rgba(255,255,255,.07);stroke-width:16;stroke-linecap:round}
+.g-fill{fill:none;stroke-width:16;stroke-linecap:round;transition:stroke .4s}
+.g-tick{font-family:var(--en);font-size:11px;fill:var(--dim);text-anchor:middle;dominant-baseline:middle}
+.needle{transition:transform .12s linear;transform-origin:180px 180px}
+.g-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.g-phase{font-size:14px;color:var(--muted);height:20px;display:flex;align-items:center;gap:6px}
+.g-val{font-family:var(--en);font-size:64px;font-weight:700;letter-spacing:-2px;line-height:1.05;margin-top:2px}
+.g-unit{font-family:var(--en);font-size:14px;color:var(--muted);font-weight:500}
+
+.go-btn{position:absolute;inset:0;margin:auto;width:44%;height:44%;border-radius:50%;background:radial-gradient(circle at 30% 25%,#38bdf8,#2563eb 55%,#4c1d95);
+  box-shadow:0 0 0 10px rgba(59,130,246,.10),0 0 0 22px rgba(59,130,246,.05),0 20px 60px rgba(37,99,235,.55);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:transform .2s, opacity .3s;z-index:2}
+.go-btn:active{transform:scale(.95)}
+.go-btn b{font-family:var(--en);font-size:40px;font-weight:800;letter-spacing:1px}
+.go-btn span{font-size:13px;opacity:.85}
+.go-btn::before{content:"";position:absolute;inset:-10px;border-radius:50%;border:2px solid rgba(56,189,248,.4);animation:pulse 2.2s ease-out infinite}
+@keyframes pulse{from{transform:scale(.92);opacity:1}to{transform:scale(1.25);opacity:0}}
+.go-btn.hide{opacity:0;pointer-events:none;transform:scale(.6)}
+
+/* result cards */
+.results{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:10px}
+.r-card{background:var(--card);border:1px solid var(--card-b);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden}
+.r-card .lbl{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted)}
+.r-card .lbl i{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;font-style:normal}
+.r-card .v{font-family:var(--en);font-size:32px;font-weight:700;margin-top:8px;letter-spacing:-1px}
+.r-card .v small{font-size:13px;color:var(--muted);font-weight:500;margin-inline-start:4px;letter-spacing:0}
+.r-card.dl .lbl i{background:rgba(34,211,238,.15);color:var(--cyan)}
+.r-card.ul .lbl i{background:rgba(167,139,250,.15);color:#c4b5fd}
+.r-card.active{border-color:rgba(56,189,248,.45);box-shadow:0 0 0 1px rgba(56,189,248,.15) inset}
+.mini{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+.mini .r-card{padding:13px 14px}
+.mini .v{font-size:22px;margin-top:4px}
+spark{display:block}
+.r-card canvas{position:absolute;left:0;right:0;bottom:0;width:100%;height:44px;opacity:.7}
+
+.info-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.chip{flex:1 1 140px;display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--card-b);border-radius:16px;padding:12px 14px}
+.chip svg{width:20px;height:20px;flex:none;color:var(--muted)}
+.chip .t{font-size:11.5px;color:var(--dim)}
+.chip .d{font-size:14px;font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:30ch}
+
+/* verdict */
+.section-title{font-size:17px;font-weight:700;margin:26px 2px 12px;display:flex;align-items:center;justify-content:space-between}
+.section-title button{font-size:13px;color:var(--cyan);font-weight:500}
+.uses{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.use{background:var(--card);border:1px solid var(--card-b);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.use .ic{font-size:22px}
+.use .n{font-size:14px;font-weight:600}
+.use .s{font-size:12px;display:flex;align-items:center;gap:6px}
+.use .s::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.ok{color:var(--green)}.mid{color:var(--amber)}.bad{color:var(--red)}.na{color:var(--dim)}
+
+.again{display:none;margin:18px auto 0;padding:13px 26px;border-radius:999px;background:var(--dl);font-weight:700;font-size:15px;box-shadow:0 10px 30px rgba(37,99,235,.4)}
+.again.show{display:block}
+.err{display:none;margin-top:14px;padding:12px 14px;border-radius:14px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:#fecaca;font-size:13.5px;line-height:1.7}
+.err.show{display:block}
+
+/* history */
+.h-list{display:flex;flex-direction:column;gap:10px}
+.h-item{display:grid;grid-template-columns:1fr auto auto auto;gap:14px;align-items:center;background:var(--card);border:1px solid var(--card-b);border-radius:18px;padding:14px 16px}
+.h-item .when{font-size:13px}
+.h-item .when small{display:block;color:var(--dim);font-size:11.5px;margin-top:3px}
+.h-item .m{text-align:center;min-width:56px}
+.h-item .m b{font-family:var(--en);font-size:17px;display:block}
+.h-item .m span{font-size:10.5px;color:var(--dim)}
+.empty{text-align:center;color:var(--muted);padding:40px 10px;font-size:14px;line-height:1.9}
+.empty .big{font-size:42px;margin-bottom:6px}
+.chart-card{background:var(--card);border:1px solid var(--card-b);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.chart-card canvas{width:100%;height:170px;display:block}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-bottom:10px}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend span::before{content:"";width:10px;height:10px;border-radius:3px;background:var(--c)}
+.stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+
+/* plan */
+.plan-hero{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center;background:var(--card);border:1px solid var(--card-b);border-radius:26px;padding:20px}
+.ring{position:relative;width:150px;height:150px}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring .c b{font-family:var(--en);font-size:30px;font-weight:700}
+.ring .c span{font-size:12px;color:var(--muted)}
+.plan-meta h3{font-size:18px;font-weight:700}
+.plan-meta p{color:var(--muted);font-size:13.5px;margin-top:4px;line-height:1.7}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.kv div{background:rgba(255,255,255,.04);border-radius:14px;padding:10px 12px}
+.kv span{font-size:11.5px;color:var(--dim);display:block}
+.kv b{font-family:var(--en);font-size:17px;display:block;margin-top:3px}
+.warn-box{margin-top:12px;padding:12px 14px;border-radius:14px;font-size:13.5px;line-height:1.7}
+.warn-box.good{background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.25);color:#a7f3d0}
+.warn-box.bad{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);color:#fde68a}
+
+.form{background:var(--card);border:1px solid var(--card-b);border-radius:var(--radius);padding:18px;display:grid;gap:14px}
+.field label{display:block;font-size:13px;color:var(--muted);margin-bottom:7px}
+.field input,.field select{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--card-b);border-radius:14px;padding:13px 14px;font-size:15px;outline:none;transition:border .2s}
+.field input:focus,.field select:focus{border-color:var(--blue)}
+.field select option{background:#0b1020}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.providers{display:flex;flex-wrap:wrap;gap:8px}
+.prov{padding:9px 14px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid var(--card-b);font-size:13.5px;transition:.2s}
+.prov.on{background:rgba(59,130,246,.18);border-color:var(--blue);color:#bfdbfe}
+.btn{padding:14px;border-radius:15px;background:var(--dl);font-weight:700;font-size:15px;text-align:center}
+.btn.ghost{background:rgba(255,255,255,.06);border:1px solid var(--card-b);font-weight:600}
+.quick{display:flex;gap:8px;flex-wrap:wrap}
+.quick button{flex:1;padding:11px;border-radius:13px;background:rgba(255,255,255,.05);border:1px solid var(--card-b);font-family:var(--en);font-weight:600;font-size:14px}
+.quick button:active{background:rgba(59,130,246,.2)}
+
+/* tab bar */
+.tabbar{position:fixed;bottom:calc(14px + var(--safe-b));left:50%;transform:translateX(-50%);display:flex;gap:4px;padding:6px;border-radius:24px;
+  background:rgba(15,20,38,.72);backdrop-filter:blur(22px) saturate(160%);-webkit-backdrop-filter:blur(22px) saturate(160%);border:1px solid rgba(255,255,255,.09);box-shadow:0 14px 40px rgba(0,0,0,.5);z-index:50}
+.tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 20px;border-radius:18px;font-size:11.5px;color:var(--muted);transition:.25s;min-width:78px}
+.tab svg{width:22px;height:22px}
+.tab.on{background:rgba(59,130,246,.18);color:#e0f2fe}
+
+.toast{position:fixed;top:18px;left:50%;transform:translate(-50%,-120px);background:rgba(20,26,48,.92);backdrop-filter:blur(16px);border:1px solid var(--card-b);padding:12px 18px;border-radius:16px;font-size:14px;z-index:99;transition:transform .35s cubic-bezier(.2,.9,.3,1.2)}
+.toast.show{transform:translate(-50%,0)}
+
+footer{text-align:center;color:var(--dim);font-size:12px;margin-top:34px;line-height:1.8}
+
+@media (min-width:760px){
+  .test-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:28px;align-items:center}
+  .results{margin-top:0}
+  .g-val{font-size:72px}
+}
+@media (max-width:420px){
+  .plan-hero{grid-template-columns:1fr;justify-items:center;text-align:center}
+  .kv{text-align:start}
+  .h-item{grid-template-columns:1fr auto auto;gap:10px}
+  .h-item .m.png{display:none}
+  .tab{min-width:70px;padding:9px 14px}
+}
+</style>
+</head>
+<body>
+<div class="bg-glow"></div>
+
+<header>
+  <div class="brand">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M4 16a8 8 0 0 1 16 0"/><path d="M12 16l4-5"/></svg></div>
+    <div><h1>نطاق</h1><small>سرعتك على حقيقتها</small></div>
+  </div>
+  <div class="net-pill"><span class="dot" id="netDot"></span><span id="netTxt">متصل</span></div>
+</header>
+
+<main>
+  <!-- ============ TEST ============ -->
+  <section class="view active" id="v-test">
+    <div class="test-grid">
+      <div>
+        <div class="gauge-wrap">
+          <svg viewBox="0 0 360 360" id="gauge">
+            <defs>
+              <linearGradient id="gDl" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#3b82f6"/></linearGradient>
+              <linearGradient id="gUl" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#a78bfa"/><stop offset="1" stop-color="#ec4899"/></linearGradient>
+              <filter id="glow"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <path class="g-track" id="gTrack"/>
+            <path class="g-fill" id="gFill" stroke="url(#gDl)" filter="url(#glow)"/>
+            <g id="gTicks"></g>
+          </svg>
+          <div class="g-center" id="gCenter" style="opacity:0">
+            <div class="g-phase" id="gPhase">—</div>
+            <div class="g-val" id="gVal">0</div>
+            <div class="g-unit">Mbps</div>
+          </div>
+          <button class="go-btn" id="goBtn" aria-label="ابدأ الاختبار"><b>GO</b><span>ابدأ الاختبار</span></button>
+        </div>
+        <button class="again" id="againBtn">اختبر مرة ثانية</button>
+      </div>
+
+      <div>
+        <div class="results">
+          <div class="r-card dl" id="cDl">
+            <div class="lbl"><i>↓</i>التنزيل</div>
+            <div class="v"><span id="rDl">—</span><small>Mbps</small></div>
+            <canvas id="spDl"></canvas>
+          </div>
+          <div class="r-card ul" id="cUl">
+            <div class="lbl"><i>↑</i>الرفع</div>
+            <div class="v"><span id="rUl">—</span><small>Mbps</small></div>
+            <canvas id="spUl"></canvas>
+          </div>
+        </div>
+        <div class="mini">
+          <div class="r-card" id="cPing"><div class="lbl">زمن الاستجابة</div><div class="v"><span id="rPing">—</span><small>ms</small></div></div>
+          <div class="r-card"><div class="lbl">التذبذب</div><div class="v"><span id="rJit">—</span><small>ms</small></div></div>
+          <div class="r-card"><div class="lbl">الحمل</div><div class="v"><span id="rLoad">—</span><small>ms</small></div></div>
+        </div>
+        <div class="info-row">
+          <div class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a14.5 14.5 0 0 1 20 0"/><circle cx="12" cy="19.5" r="1" fill="currentColor"/></svg><div><div class="t">مزوّد الخدمة</div><div class="d" id="iIsp">…</div></div></div>
+          <div class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg><div><div class="t">عنوان IP</div><div class="d en" id="iIp">…</div></div></div>
+          <div class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><div><div class="t">الخادم</div><div class="d" id="iSrv">…</div></div></div>
+        </div>
+        <div class="err" id="errBox"></div>
+      </div>
+    </div>
+
+    <div class="section-title">وش تكفي سرعتك؟</div>
+    <div class="uses" id="uses"></div>
+  </section>
+
+  <!-- ============ HISTORY ============ -->
+  <section class="view" id="v-hist">
+    <div class="section-title" style="margin-top:8px">السجل <button id="clearHist">مسح الكل</button></div>
+    <div id="histWrap"></div>
+  </section>
+
+  <!-- ============ PLAN ============ -->
+  <section class="view" id="v-plan">
+    <div class="section-title" style="margin-top:8px">باقتي</div>
+    <div id="planView"></div>
+
+    <div class="section-title">سجّل استهلاكك</div>
+    <div class="form">
+      <div class="field">
+        <label>كم استهلكت من الباقة إلى الآن؟ (GB)</label>
+        <input type="number" inputmode="decimal" step="0.1" min="0" id="usedIn" class="en" placeholder="0">
+      </div>
+      <div class="quick" id="quickAdd">
+        <button data-a="0.5">+0.5</button><button data-a="1">+1</button><button data-a="5">+5</button><button data-a="10">+10</button>
+      </div>
+      <button class="btn" id="saveUsed">تحديث الاستهلاك</button>
+    </div>
+
+    <div class="section-title">إعدادات الباقة</div>
+    <div class="form">
+      <div class="field">
+        <label>شركة الاتصالات</label>
+        <div class="providers" id="provs"></div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>حجم الباقة (GB)</label>
+          <input type="number" inputmode="decimal" min="0" id="sizeIn" class="en" placeholder="مثال 100">
+        </div>
+        <div class="field">
+          <label>يوم التجديد</label>
+          <select id="dayIn" class="en"></select>
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)"><input type="checkbox" id="unlIn" style="width:18px;height:18px;accent-color:#3b82f6"> باقة لا محدودة</label>
+      <button class="btn" id="savePlan">حفظ الباقة</button>
+    </div>
+  </section>
+
+  <footer>نطاق — يقيس السرعة عبر خوادم Cloudflare القريبة منك<br>بياناتك محفوظة في جهازك فقط</footer>
+</main>
+
+<nav class="tabbar">
+  <button class="tab on" data-v="test"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3.5 17a8.5 8.5 0 1 1 17 0"/><path d="M12 17l4.5-5.5"/></svg>السرعة</button>
+  <button class="tab" data-v="hist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>السجل</button>
+  <button class="tab" data-v="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg>باقتي</button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const CF = 'https://speed.cloudflare.com';
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem('nitaq:'+k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('nitaq:'+k, JSON.stringify(v)); }catch(e){} }
+};
+const fmt = n => n == null || isNaN(n) ? '—' : (n >= 100 ? Math.round(n) : n >= 10 ? n.toFixed(1) : n.toFixed(2));
+const toast = msg => { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove('show'), 2200); };
+
+/* ---------------- network status ---------------- */
+function netStatus(){
+  const on = navigator.onLine;
+  $('#netDot').classList.toggle('off', !on);
+  const c = navigator.connection;
+  let label = on ? 'متصل' : 'غير متصل';
+  if (on && c && c.effectiveType) label += ' · ' + ({'4g':'4G','3g':'3G','2g':'2G','slow-2g':'2G'}[c.effectiveType] || c.effectiveType);
+  $('#netTxt').textContent = label;
+}
+addEventListener('online', netStatus); addEventListener('offline', netStatus); netStatus();
+
+/* ---------------- tabs ---------------- */
+$$('.tab').forEach(b => b.onclick = () => {
+  $$('.tab').forEach(x => x.classList.toggle('on', x === b));
+  $$('.view').forEach(v => v.classList.toggle('active', v.id === 'v-' + b.dataset.v));
+  if (b.dataset.v === 'hist') renderHistory();
+  if (b.dataset.v === 'plan') renderPlan();
+  scrollTo({top:0, behavior:'smooth'});
+});
+
+/* ---------------- gauge ---------------- */
+const CX = 180, CY = 180, R = 150, START = 225, SWEEP = 270;
+const SCALE = [0, 5, 10, 25, 50, 100, 250, 500, 1000];
+const polar = (deg, r = R) => { const a = (deg - 90) * Math.PI / 180; return [CX + r * Math.cos(a), CY + r * Math.sin(a)]; };
+function arcPath(from, to){
+  const [x1,y1] = polar(from), [x2,y2] = polar(to);
+  const large = (to - from) > 180 ? 1 : 0;
+  return `M${x1} ${y1} A${R} ${R} 0 ${large} 1 ${x2} ${y2}`;
+}
+function valToFrac(v){
+  if (v <= 0) return 0;
+  if (v >= SCALE[SCALE.length-1]) return 1;
+  for (let i = 1; i < SCALE.length; i++){
+    if (v <= SCALE[i]) { const seg = (v - SCALE[i-1]) / (SCALE[i] - SCALE[i-1]); return (i - 1 + seg) / (SCALE.length - 1); }
+  }
+  return 1;
+}
+$('#gTrack').setAttribute('d', arcPath(START, START + SWEEP));
+$('#gTicks').innerHTML = SCALE.map((v, i) => {
+  const [x, y] = polar(START + SWEEP * i / (SCALE.length - 1), R - 32);
+  return `<text class="g-tick" x="${x}" y="${y}">${v}</text>`;
+}).join('');
+let gaugeShown = 0, gaugeTarget = 0, gaugeRaf = 0;
+function setGauge(v){ gaugeTarget = v; if (!gaugeRaf) gaugeRaf = requestAnimationFrame(tickGauge); }
+function tickGauge(){
+  gaugeShown += (gaugeTarget - gaugeShown) * 0.18;
+  if (Math.abs(gaugeTarget - gaugeShown) < 0.01) gaugeShown = gaugeTarget;
+  const f = valToFrac(gaugeShown);
+  $('#gFill').setAttribute('d', f > 0.002 ? arcPath(START, START + SWEEP * f) : '');
+  $('#gVal').textContent = fmt(gaugeShown);
+  gaugeRaf = gaugeShown !== gaugeTarget ? requestAnimationFrame(tickGauge) : 0;
+}
+function gaugeMode(kind){
+  $('#gFill').setAttribute('stroke', kind === 'ul' ? 'url(#gUl)' : 'url(#gDl)');
+  $('#gPhase').innerHTML = kind === 'ul' ? '<span style="color:#c4b5fd">↑</span> الرفع' : kind === 'dl' ? '<span style="color:#22d3ee">↓</span> التنزيل' : kind === 'ping' ? 'قياس الاستجابة' : 'جاري الاتصال…';
+}
+
+/* ---------------- sparkline ---------------- */
+function spark(canvas, data, c1, c2){
+  const dpr = devicePixelRatio || 1, w = canvas.clientWidth, h = canvas.clientHeight;
+  if (!w) return;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr); ctx.clearRect(0,0,w,h);
+  if (data.length < 2) return;
+  const max = Math.max(...data) * 1.15 || 1;
+  const pts = data.map((v, i) => [w - (i / (data.length - 1)) * w, h - (v / max) * (h - 4)]); // RTL: start from right
+  const g = ctx.createLinearGradient(0, 0, 0, h); g.addColorStop(0, c1 + '55'); g.addColorStop(1, c1 + '00');
+  ctx.beginPath(); ctx.moveTo(pts[0][0], h); pts.forEach(p => ctx.lineTo(p[0], p[1])); ctx.lineTo(pts[pts.length-1][0], h); ctx.closePath(); ctx.fillStyle = g; ctx.fill();
+  ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
+  const lg = ctx.createLinearGradient(w, 0, 0, 0); lg.addColorStop(0, c1); lg.addColorStop(1, c2);
+  ctx.strokeStyle = lg; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
+}
+
+/* ---------------- meta (ISP / IP / server) ---------------- */
+const COLO = {RUH:'الرياض',JED:'جدة',DMM:'الدمام',DXB:'دبي',AUH:'أبوظبي',BAH:'البحرين',KWI:'الكويت',DOH:'الدوحة',MCT:'مسقط',CAI:'القاهرة',AMM:'عمّان',FRA:'فرانكفورت',LHR:'لندن',CDG:'باريس',MRS:'مرسيليا',AMS:'أمستردام',IST:'إسطنبول',MAD:'مدريد',MIL:'ميلانو',MXP:'ميلانو',BOM:'مومباي',SIN:'سنغافورة'};
+async function loadMeta(){
+  try{
+    const r = await fetch(CF + '/meta', {cache:'no-store', signal: AbortSignal.timeout ? AbortSignal.timeout(6000) : undefined});
+    const m = await r.json();
+    $('#iIsp').textContent = m.asOrganization || '—';
+    $('#iIp').textContent = m.clientIp || '—';
+    const colo = (m.colo || '').toUpperCase();
+    $('#iSrv').textContent = colo ? (COLO[colo] ? `${COLO[colo]} · ${colo}` : colo) : (m.city || '—');
+    return m;
+  }catch(e){
+    $('#iIsp').textContent = '—'; $('#iIp').textContent = '—'; $('#iSrv').textContent = 'Cloudflare';
+    return {};
+  }
+}
+loadMeta();
+
+/* ---------------- speed test engine ---------------- */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const tSig = ms => (AbortSignal.timeout ? AbortSignal.timeout(ms) : undefined);
+const now = () => performance.now();
+
+async function measurePing(n = 12){
+  const times = [];
+  for (let i = 0; i < n; i++){
+    const t0 = now();
+    const r = await fetch(`${CF}/__down?bytes=0&r=${Math.random()}`, {cache:'no-store', signal: tSig(6000)});
+    await r.arrayBuffer();
+    const dt = now() - t0;
+    if (i > 0) times.push(dt); // first request warms the connection
+    $('#rPing').textContent = Math.round(Math.min(...times.length ? times : [dt]));
+  }
+  times.sort((a,b) => a - b);
+  const kept = times.slice(0, Math.max(3, Math.ceil(times.length * 0.7)));
+  const ping = kept.reduce((a,b) => a + b, 0) / kept.length;
+  let jit = 0; for (let i = 1; i < kept.length; i++) jit += Math.abs(kept[i] - kept[i-1]);
+  jit = kept.length > 1 ? jit / (kept.length - 1) : 0;
+  return { ping: Math.min(...times), avg: ping, jitter: jit };
+}
+
+// Generic throughput runner: counts bytes over a fixed window using several parallel streams
+async function runThroughput({ duration, streams, worker, onSample }){
+  const ctrl = new AbortController();
+  let bytes = 0, done = false;
+  const t0 = now(), samples = [];
+  const add = n => { bytes += n; };
+  const jobs = Array.from({length: streams}, async (_, i) => {
+    await sleep(i * 120);
+    while (!done){ try{ await worker(add, ctrl.signal); }catch(e){ if (done) break; await sleep(200); } }
+  });
+  // sampler
+  let lastB = 0, lastT = t0, warmB = 0, warmT = 0, ema = 0;
+  while (now() - t0 < duration){
+    await sleep(200);
+    const t = now(), dB = bytes - lastB, dT = (t - lastT) / 1000;
+    lastB = bytes; lastT = t;
+    const inst = dB * 8 / dT / 1e6;
+    ema = ema ? ema * 0.7 + inst * 0.3 : inst;
+    samples.push(ema);
+    if (!warmT && t - t0 > 1500){ warmT = t; warmB = bytes; }
+    onSample && onSample(ema, samples);
+  }
+  done = true; ctrl.abort();
+  await Promise.race([Promise.allSettled(jobs), sleep(800)]);
+  const end = now();
+  const finalMbps = warmT ? ((bytes - warmB) * 8 / ((end - warmT) / 1000) / 1e6) : (bytes * 8 / ((end - t0) / 1000) / 1e6);
+  return { mbps: finalMbps, samples, bytes };
+}
+
+async function downloadWorker(add, signal){
+  const r = await fetch(`${CF}/__down?bytes=25000000&r=${Math.random()}`, {cache:'no-store', signal});
+  if (!r.ok) throw new Error('dl ' + r.status);
+  const reader = r.body.getReader();
+  for (;;){ const {done, value} = await reader.read(); if (done) break; add(value.byteLength); }
+}
+
+let upBlob = null;
+function getUpBlob(size){
+  if (upBlob && upBlob.size === size) return upBlob;
+  const buf = new Uint8Array(size);
+  for (let i = 0; i < size; i += 65536) crypto.getRandomValues(buf.subarray(i, Math.min(i + 65536, size)));
+  return (upBlob = new Blob([buf], {type:'text/plain'}));
+}
+async function uploadWorker(add, signal){
+  const blob = getUpBlob(1_000_000);
+  // no-cors keeps it a simple request (no preflight); timing still valid
+  await fetch(`${CF}/__up?r=${Math.random()}`, {method:'POST', body:blob, mode:'no-cors', cache:'no-store', signal});
+  add(blob.size);
+}
+
+// latency while the line is busy (bufferbloat)
+async function loadedLatency(signalDone){
+  const t = [];
+  while (!signalDone.v){
+    const t0 = now();
+    try{ const r = await fetch(`${CF}/__down?bytes=0&r=${Math.random()}`, {cache:'no-store', signal: tSig(3000)}); await r.arrayBuffer(); t.push(now() - t0); }catch(e){}
+    await sleep(400);
+  }
+  t.sort((a,b)=>a-b);
+  return t.length ? t[Math.floor(t.length/2)] : null;
+}
+
+let running = false;
+async function startTest(){
+  if (running) return;
+  if (!navigator.onLine){ toast('ما فيه اتصال بالإنترنت'); return; }
+  running = true;
+  $('#errBox').classList.remove('show');
+  $('#goBtn').classList.add('hide'); $('#againBtn').classList.remove('show');
+  $('#gCenter').style.opacity = 1;
+  ['rDl','rUl','rPing','rJit','rLoad'].forEach(id => $('#'+id).textContent = '—');
+  ['#cDl','#cUl','#cPing'].forEach(s => $(s).classList.remove('active'));
+  spark($('#spDl'), [], '', ''); spark($('#spUl'), [], '', '');
+  gaugeShown = 0; setGauge(0); gaugeMode('conn');
+
+  const result = { t: Date.now() };
+  try{
+    const meta = await loadMeta();
+    result.isp = meta.asOrganization || ''; result.colo = meta.colo || '';
+
+    // 1) ping
+    gaugeMode('ping'); $('#cPing').classList.add('active');
+    const p = await measurePing();
+    result.ping = p.ping; result.jitter = p.jitter;
+    $('#rPing').textContent = Math.round(p.ping); $('#rJit').textContent = fmt(p.jitter);
+    $('#cPing').classList.remove('active');
+
+    // 2) download
+    gaugeMode('dl'); $('#cDl').classList.add('active');
+    const flag = { v:false };
+    const loadedP = loadedLatency(flag);
+    const dl = await runThroughput({ duration: 9000, streams: 6, worker: downloadWorker,
+      onSample: (v, s) => { setGauge(v); $('#rDl').textContent = fmt(v); spark($('#spDl'), s, '#22d3ee', '#3b82f6'); } });
+    flag.v = true;
+    if (!dl.bytes) throw new Error('no-data');
+    result.dl = dl.mbps;
+    $('#rDl').textContent = fmt(dl.mbps); $('#cDl').classList.remove('active');
+    result.loaded = await loadedP;
+    $('#rLoad').textContent = result.loaded ? Math.round(result.loaded) : '—';
+    setGauge(0); await sleep(500);
+
+    // 3) upload
+    gaugeMode('ul'); $('#cUl').classList.add('active');
+    const ul = await runThroughput({ duration: 8000, streams: 4, worker: uploadWorker,
+      onSample: (v, s) => { setGauge(v); $('#rUl').textContent = fmt(v); spark($('#spUl'), s, '#a78bfa', '#ec4899'); } });
+    result.ul = ul.mbps;
+    $('#rUl').textContent = fmt(ul.mbps); $('#cUl').classList.remove('active');
+
+    setGauge(result.dl); gaugeMode('dl');
+    $('#gPhase').textContent = 'اكتمل الاختبار ✓';
+
+    const hist = store.get('history', []);
+    hist.unshift(result); store.set('history', hist.slice(0, 100));
+    renderUses(result);
+    toast('تم حفظ النتيجة في السجل');
+  }catch(e){
+    console.error(e);
+    const eb = $('#errBox');
+    eb.innerHTML = 'تعذّر إكمال الاختبار. تأكد من اتصالك، أو إن كان عندك مانع إعلانات أو VPN يمنع الاتصال بخوادم <span class="en">Cloudflare</span> عطّله وجرّب مرة ثانية.';
+    eb.classList.add('show');
+    $('#gPhase').textContent = 'توقف الاختبار';
+    setGauge(0);
+  }finally{
+    running = false;
+    $('#againBtn').classList.add('show');
+  }
+}
+$('#goBtn').onclick = startTest;
+$('#againBtn').onclick = startTest;
+
+/* ---------------- what is it enough for ---------------- */
+const USES = [
+  { ic:'💬', n:'واتساب وتصفح', dl:1, ul:0.5, ping:300 },
+  { ic:'🎵', n:'سماع موسيقى', dl:2, ul:0.2, ping:400 },
+  { ic:'📺', n:'يوتيوب HD', dl:8, ul:0.5, ping:300 },
+  { ic:'🎬', n:'نتفليكس 4K', dl:25, ul:0.5, ping:300 },
+  { ic:'📹', n:'مكالمات فيديو', dl:4, ul:3, ping:150 },
+  { ic:'🎮', n:'ألعاب أونلاين', dl:10, ul:3, ping:60 },
+  { ic:'📡', n:'بث مباشر', dl:5, ul:8, ping:120 },
+  { ic:'⬇️', n:'تحميل لعبة 50GB', dl:100, ul:0, ping:9999 },
+];
+function renderUses(r){
+  $('#uses').innerHTML = USES.map(u => {
+    let cls = 'na', txt = 'اختبر أول';
+    if (r && r.dl != null){
+      const okDl = r.dl >= u.dl, okUl = (r.ul ?? 0) >= u.ul, okPing = (r.ping ?? 999) <= u.ping;
+      const almost = r.dl >= u.dl * 0.6 && (r.ul ?? 0) >= u.ul * 0.6 && (r.ping ?? 999) <= u.ping * 1.5;
+      if (okDl && okUl && okPing){ cls = 'ok'; txt = 'ممتاز'; }
+      else if (almost){ cls = 'mid'; txt = 'مقبول'; }
+      else { cls = 'bad'; txt = 'ضعيف'; }
+      if (u.n.startsWith('تحميل') && r.dl){
+        const mins = 50 * 8000 / r.dl / 60;
+        txt = mins < 60 ? `${Math.round(mins)} دقيقة` : `${(mins/60).toFixed(1)} ساعة`;
+        cls = mins < 30 ? 'ok' : mins < 120 ? 'mid' : 'bad';
+      }
+    }
+    return `<div class="use"><div class="ic">${u.ic}</div><div class="n">${u.n}</div><div class="s ${cls}">${txt}</div></div>`;
+  }).join('');
+}
+renderUses(store.get('history', [])[0]);
+
+/* ---------------- history ---------------- */
+const dateFmt = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-latn', { weekday:'long', day:'numeric', month:'long' });
+const timeFmt = new Intl.DateTimeFormat('ar-SA-u-nu-latn', { hour:'numeric', minute:'2-digit' });
+function renderHistory(){
+  const h = store.get('history', []);
+  const wrap = $('#histWrap');
+  $('#clearHist').style.display = h.length ? '' : 'none';
+  if (!h.length){ wrap.innerHTML = `<div class="empty"><div class="big">📶</div>ما فيه اختبارات للحين<br>سوّ أول اختبار من تبويب السرعة</div>`; return; }
+  const avg = k => { const a = h.filter(x => x[k] != null); return a.length ? a.reduce((s,x)=>s+x[k],0)/a.length : null; };
+  const best = Math.max(...h.map(x => x.dl || 0));
+  wrap.innerHTML = `
+    <div class="stats3">
+      <div class="r-card"><div class="lbl">متوسط التنزيل</div><div class="v" style="font-size:22px">${fmt(avg('dl'))}<small>Mbps</small></div></div>
+      <div class="r-card"><div class="lbl">متوسط الرفع</div><div class="v" style="font-size:22px">${fmt(avg('ul'))}<small>Mbps</small></div></div>
+      <div class="r-card"><div class="lbl">أعلى سرعة</div><div class="v" style="font-size:22px">${fmt(best)}<small>Mbps</small></div></div>
+    </div>
+    ${h.length > 1 ? `<div class="chart-card"><div class="legend"><span style="--c:#22d3ee">التنزيل</span><span style="--c:#c084fc">الرفع</span></div><canvas id="histChart"></canvas></div>` : ''}
+    <div class="h-list">${h.map(x => `
+      <div class="h-item">
+        <div class="when">${dateFmt.format(x.t)}<small>${timeFmt.format(x.t)}${x.isp ? ' · <span class="en">' + esc(x.isp) + '</span>' : ''}</small></div>
+        <div class="m"><b style="color:#67e8f9">${fmt(x.dl)}</b><span>↓ تنزيل</span></div>
+        <div class="m"><b style="color:#d8b4fe">${fmt(x.ul)}</b><span>↑ رفع</span></div>
+        <div class="m png"><b>${x.ping != null ? Math.round(x.ping) : '—'}</b><span>ms</span></div>
+      </div>`).join('')}</div>`;
+  if (h.length > 1) requestAnimationFrame(() => drawHistChart(h.slice(0, 20).reverse()));
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function drawHistChart(h){
+  const c = $('#histChart'); if (!c) return;
+  const dpr = devicePixelRatio || 1, w = c.clientWidth, H = c.clientHeight;
+  c.width = w * dpr; c.height = H * dpr;
+  const ctx = c.getContext('2d'); ctx.scale(dpr, dpr);
+  const max = Math.max(...h.map(x => Math.max(x.dl || 0, x.ul || 0))) * 1.15 || 1;
+  const pad = 8, x = i => w - pad - (i / (h.length - 1)) * (w - pad * 2), y = v => H - 18 - (v / max) * (H - 30);
+  ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 3; i++){ const yy = 12 + i * (H - 30) / 3; ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(w, yy); ctx.stroke(); }
+  [['dl','#22d3ee'],['ul','#c084fc']].forEach(([k, col]) => {
+    const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, col + '40'); g.addColorStop(1, col + '00');
+    ctx.beginPath(); ctx.moveTo(x(0), H - 18); h.forEach((p, i) => ctx.lineTo(x(i), y(p[k] || 0))); ctx.lineTo(x(h.length - 1), H - 18); ctx.closePath(); ctx.fillStyle = g; ctx.fill();
+    ctx.beginPath(); h.forEach((p, i) => i ? ctx.lineTo(x(i), y(p[k] || 0)) : ctx.moveTo(x(i), y(p[k] || 0)));
+    ctx.strokeStyle = col; ctx.lineWidth = 2.2; ctx.lineJoin = 'round'; ctx.stroke();
+    h.forEach((p, i) => { ctx.beginPath(); ctx.arc(x(i), y(p[k] || 0), 2.6, 0, 7); ctx.fillStyle = col; ctx.fill(); });
+  });
+  ctx.fillStyle = '#5b6380'; ctx.font = '10px Rubik, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText(Math.round(max / 1.15) + ' Mbps', 4, 10);
+}
+$('#clearHist').onclick = () => { if (confirm('تبي تمسح كل السجل؟')){ store.set('history', []); renderHistory(); renderUses(null); } };
+
+/* ---------------- plan ---------------- */
+const PROVIDERS = ['STC','موبايلي','زين','سلام','ليبارا','ريد بُل','فيرجن','أخرى'];
+let plan = store.get('plan', { prov:'STC', size:100, day:1, used:0, unl:false });
+$('#provs').innerHTML = PROVIDERS.map(p => `<button class="prov${p === plan.prov ? ' on' : ''}" data-p="${p}">${p}</button>`).join('');
+$$('.prov').forEach(b => b.onclick = () => { $$('.prov').forEach(x => x.classList.toggle('on', x === b)); });
+$('#dayIn').innerHTML = Array.from({length:28}, (_, i) => `<option value="${i+1}">${i+1}</option>`).join('');
+function fillPlanForm(){ $('#sizeIn').value = plan.size || ''; $('#dayIn').value = plan.day; $('#unlIn').checked = !!plan.unl; $('#usedIn').value = plan.used || ''; }
+fillPlanForm();
+
+function cycle(){
+  const today = new Date(); today.setHours(0,0,0,0);
+  let start = new Date(today.getFullYear(), today.getMonth(), plan.day);
+  if (start > today) start = new Date(today.getFullYear(), today.getMonth() - 1, plan.day);
+  const end = new Date(start.getFullYear(), start.getMonth() + 1, plan.day);
+  const total = Math.round((end - start) / 864e5);
+  const passed = Math.round((today - start) / 864e5);
+  return { start, end, total, passed, left: total - passed };
+}
+function renderPlan(){
+  const c = cycle();
+  const used = +plan.used || 0;
+  const renew = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-latn', { day:'numeric', month:'long' }).format(c.end);
+  if (plan.unl){
+    $('#planView').innerHTML = `<div class="plan-hero">
+      <div class="ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="url(#rg)" stroke-width="10"/><defs><linearGradient id="rg"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs></svg><div class="c"><b>∞</b><span>لا محدودة</span></div></div>
+      <div class="plan-meta"><h3>${esc(plan.prov)} · لا محدودة</h3><p>استهلكت <span class="en">${fmt(used)} GB</span> في هذه الدورة · التجديد ${renew}</p>
+      <div class="kv"><div><span>باقي على التجديد</span><b>${c.left} <small style="font-family:var(--ar);font-size:12px">يوم</small></b></div><div><span>معدل يومي</span><b>${fmt(used / Math.max(1, c.passed))} GB</b></div></div></div></div>`;
+    return;
+  }
+  const size = +plan.size || 0;
+  const remain = Math.max(0, size - used);
+  const pct = size ? Math.min(1, used / size) : 0;
+  const perDay = remain / Math.max(1, c.left);
+  const rate = used / Math.max(1, c.passed);
+  const projected = rate * c.total;
+  const circ = 2 * Math.PI * 52;
+  const col = pct < .6 ? '#22d3ee' : pct < .85 ? '#fbbf24' : '#f87171';
+  let advice;
+  if (!size) advice = `<div class="warn-box bad">حدد حجم باقتك من الإعدادات تحت عشان نحسب لك.</div>`;
+  else if (used >= size) advice = `<div class="warn-box bad">خلصت باقتك 😅 باقي ${c.left} يوم على التجديد.</div>`;
+  else if (c.passed > 0 && projected > size) {
+    const runout = Math.floor(remain / Math.max(rate, 0.0001));
+    advice = `<div class="warn-box bad">بهذا المعدل بتخلص الباقة بعد <span class="en">${runout}</span> يوم تقريباً — قبل التجديد بـ <span class="en">${c.left - runout}</span> يوم. خفّف إلى <span class="en">${fmt(perDay)} GB</span> يومياً.</div>`;
+  } else advice = `<div class="warn-box good">ماشي تمام 👌 تقدر تستهلك <span class="en">${fmt(perDay)} GB</span> يومياً وتكفيك للتجديد.</div>`;
+  $('#planView').innerHTML = `<div class="plan-hero">
+    <div class="ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="10"/>
+      <circle cx="60" cy="60" r="52" fill="none" stroke="${col}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${circ * pct}" style="transition:stroke-dashoffset .8s ease;filter:drop-shadow(0 0 6px ${col})"/></svg>
+      <div class="c"><b>${fmt(remain)}</b><span>GB متبقي</span></div></div>
+    <div class="plan-meta"><h3>${esc(plan.prov)} · <span class="en">${size} GB</span></h3>
+      <p>استهلكت <span class="en">${fmt(used)}</span> من <span class="en">${size} GB</span> (${Math.round(pct*100)}٪) · التجديد ${renew}</p>
+      <div class="kv"><div><span>باقي على التجديد</span><b>${c.left} <small style="font-family:var(--ar);font-size:12px">يوم</small></b></div><div><span>المسموح يومياً</span><b>${fmt(perDay)} GB</b></div></div>
+    </div></div>${advice}`;
+}
+$('#savePlan').onclick = () => {
+  plan.prov = ($('.prov.on') || {}).dataset?.p || plan.prov;
+  plan.size = Math.max(0, +$('#sizeIn').value || 0);
+  plan.day = +$('#dayIn').value || 1;
+  plan.unl = $('#unlIn').checked;
+  store.set('plan', plan); renderPlan(); toast('تم حفظ الباقة');
+};
+$('#saveUsed').onclick = () => { plan.used = Math.max(0, +$('#usedIn').value || 0); store.set('plan', plan); renderPlan(); toast('تم تحديث الاستهلاك'); };
+$$('#quickAdd button').forEach(b => b.onclick = () => { $('#usedIn').value = +((+$('#usedIn').value || 0) + +b.dataset.a).toFixed(2); });
+renderPlan();
+})();
+</script>
+</body>
+</html>
